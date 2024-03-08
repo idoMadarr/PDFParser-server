@@ -77,7 +77,7 @@ app.post("/store_image", imageUpload.single("file"), async (req, res, next) => {
 });
 
 const initServer = () => {
-  app.listen(8080, () => {
+  app.listen(process.env.PORT, () => {
     console.log(`Server started on port 8080`);
   });
 };
