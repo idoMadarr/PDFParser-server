@@ -9,20 +9,52 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-const storage = multer.diskStorage({
-  destination: "uploads/",
-  filename: function (req, file, cb) {
+const imageStorage = multer.diskStorage({
+  destination: "image-uploads",
+  filename: (req, file, cb) => {
+    cb(
+      null,
+      Date.now() + "-" + `${file.originalname}.${file.mimetype.split("/")[1]}`
+    );
+  },
+});
+
+const pdfStorage = multer.diskStorage({
+  destination: "pdf-uploads",
+  filename: (req, file, cb) => {
     cb(null, Date.now() + "-" + file.originalname);
   },
 });
 
-const uploadDest = multer({ storage });
+// @ts-ignore:
+const imageFileFilter = (req, file, cb) => {
+  if (file.mimetype.includes("image/")) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
 
-app.post("/parser", uploadDest.single("file"), async (req, res, next) => {
-  if (req.file?.mimetype.includes("/pdf")) {
+// @ts-ignore:
+const pdfFileFilter = (req, file, cb) => {
+  if (file.mimetype.includes("/pdf")) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
+
+const imageUpload = multer({
+  storage: imageStorage,
+  fileFilter: imageFileFilter,
+});
+const pdfUploads = multer({ storage: pdfStorage, fileFilter: pdfFileFilter });
+
+app.post("/parser_pdf", pdfUploads.single("file"), async (req, res, next) => {
+  if (req.file) {
     const fileName = req.file.filename;
 
-    readFile(`uploads/${fileName}`, async (err, data) => {
+    readFile(`pdf-uploads/${fileName}`, async (err, data) => {
       if (err) {
         throw new Error("Buffer error");
       }
@@ -32,7 +64,15 @@ app.post("/parser", uploadDest.single("file"), async (req, res, next) => {
       });
     });
   } else {
+    res.send({ message: "No PDF file to save" });
+  }
+});
+
+app.post("/store_image", imageUpload.single("file"), async (req, res, next) => {
+  if (req.file) {
     res.send({ message: "Docuemnt saved" });
+  } else {
+    res.send({ message: "No Image file to save" });
   }
 });
 
